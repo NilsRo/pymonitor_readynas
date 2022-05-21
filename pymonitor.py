@@ -3,8 +3,10 @@
 import os, re, imp, socket
 from daemon3x import daemon
 from optparse import OptionParser
+from threading import Thread
 import time
 import send_thecus
+import gpio as GPIO
 
 # Options
 parser = OptionParser("usage: %prog [options]", version="%prog 2.0")
@@ -29,6 +31,11 @@ if advance_in > 60:
 get_text = "get_text"
 get_update_freq = "get_update_freq"
 default_update_freq = opts.updatefreq
+
+ev_refresh_now = False
+ev_pause = False
+ev_next = False
+ev_back = False
 
 # build a list of modules
 # the stagger value causes module updates to be staggered
@@ -60,14 +67,66 @@ for file in os.listdir(mod_dir):
         mod_desc["countdown"] = 0
         mods.append(mod_desc)
 
+def buttons_loop():
+    global ev_next, ev_back, ev_refresh_now, ev_pause
+
+    GPIO.setup(16, GPIO.IN)
+    GPIO.setup(17, GPIO.IN)
+    GPIO.setup(18, GPIO.IN)
+    GPIO.setup(19, GPIO.IN)
+
+    st_esc = 1
+    st_ent = 1
+    st_dwn = 1
+    st_upp = 1
+
+    while True:
+        ev_esc = GPIO.input(16)
+        ev_ent = GPIO.input(17)
+        ev_dwn = GPIO.input(18)
+        ev_upp = GPIO.input(19)
+
+        if ev_esc == 0 and st_esc == 1:
+            if opts.debug == True:
+                print("Escape pressed!")
+            ev_refresh_now = True
+
+        if ev_ent == 0 and st_ent == 1:
+            if opts.debug == True:
+                print("Enter pressed!")
+            if ev_pause:
+                ev_pause = False
+            else:
+                ev_pause = True
+
+        if ev_upp == 0 and st_upp == 1:
+            if opts.debug == True:
+                print("Up pressed!")
+            ev_back = True
+            ev_pause = True
+
+        if ev_dwn == 0 and st_dwn == 1:
+            if opts.debug == True:
+                print("Down pressed!")
+            ev_next = True
+            ev_pause = True
+
+        st_esc = ev_esc
+        st_ent = ev_ent
+        st_dwn = ev_dwn
+        st_upp = ev_upp
+
+        time.sleep(0.1)
+
 def main_loop():
+    global ev_next, ev_back, ev_refresh_now, ev_pause
     idx = 0
     sub_idx = 0
 
     while True:
         # run gettext for each required module
         for mod in mods:
-            if mod["countdown"] == 0:
+            if mod["countdown"] == 0 or ev_refresh_now:
                 if mod[get_text] != None:
                     mod["text"] = mod[get_text]()
                 else:
@@ -76,13 +135,35 @@ def main_loop():
             else:
                 mod["countdown"] = mod["countdown"] - 1
 
+        ev_refresh_now = False
+
         # build the time string
-        msg1 = socket.gethostname() + time.strftime(" %H:%M:%S")
+        t = time.localtime(time.time())
+        t_msg = time.strftime(" %H:%M:%S")
+
+        if ev_pause and t.tm_sec % advance_in == 0:
+            t_msg = " <<HOLD>>"
+
+        msg1 = socket.gethostname().ljust(11)[0:11] + t_msg
 
         # if zero-length mods, blank second line
         if len(mods) == 0:
             msg2 = ""
         else:
+            if ev_back:
+                if sub_idx == 0:
+                    idx = idx - 1
+                elif idx == 0:
+                    idx = len(mods) - 2
+                else:
+                    sub_idx = sub_idx - 1
+
+                ev_back = False
+
+            if ev_next:
+                sub_idx = sub_idx + 1
+                ev_next = False
+
             # See if we've exceeded the sub index
             while sub_idx >= len(mods[idx]["text"]) or mods[idx]["text"][sub_idx] == None:
                 sub_idx = 0
@@ -96,8 +177,7 @@ def main_loop():
             msg2 = mods[idx]["text"][sub_idx]
 
             # Increment counter for next run
-            t = time.localtime(time.time())
-            if t.tm_sec % advance_in == 0:
+            if t.tm_sec % advance_in == 0 and not ev_pause:
                 sub_idx = sub_idx + 1
 
         ## Display the messages
@@ -114,6 +194,9 @@ def main_loop():
 class MyDaemon(daemon):
     def run(self):
         main_loop()
+
+monitor_thread = Thread(target=buttons_loop)
+monitor_thread.start()
 
 if opts.daemon == True:
     d = MyDaemon(opts.pidfile)

@@ -5,3 +5,5 @@ REQUIRES PYTHON 3
 
 see python3 ./pymonitor.py --help for usage
 
+GPIO support lib from here: https://github.com/vitiral/gpio
+
