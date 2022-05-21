@@ -1,0 +1,11 @@
+[Unit]
+Description=Thecus LCD Scroller
+
+[Service]
+Type=simple
+WorkingDirectory=/root/pymonitor
+ExecStart=/usr/bin/python3 /root/pymonitor/pymonitor.py -p /dev/ttyS0
+
+[Install]
+WantedBy=multi-user.target
+
