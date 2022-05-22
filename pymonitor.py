@@ -153,16 +153,20 @@ def main_loop():
             if ev_back:
                 if sub_idx == 0:
                     idx = idx - 1
-                elif idx == 0:
-                    idx = len(mods) - 2
                 else:
                     sub_idx = sub_idx - 1
+
+                if idx < 0:
+                    idx = len(mods) - 1
 
                 ev_back = False
 
             if ev_next:
                 sub_idx = sub_idx + 1
                 ev_next = False
+
+            if opts.debug:
+                print("D: idx: %s sub-idx: %s"%(idx,sub_idx))
 
             # See if we've exceeded the sub index
             while sub_idx >= len(mods[idx]["text"]) or mods[idx]["text"][sub_idx] == None:
