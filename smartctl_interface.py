@@ -43,7 +43,7 @@ def get_text():
     return [get_smart_info()]
 
 def get_update_freq():
-    return 1800 # every 15 minutes is more than enough, the same setting as in interface
+    return 1800 # every 30 minutes is more than enough, the same setting as in interface
                 # https://192.168.1.22/#/storage/smart/settings
 
 if __name__ == "__main__":

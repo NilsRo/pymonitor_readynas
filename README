@@ -7,3 +7,5 @@ see python3 ./pymonitor.py --help for usage
 
 GPIO support lib from here: https://github.com/vitiral/gpio
 
+How to re-wire LCD buttons from Atmega to direct GPIO: https://github.com/ipilcher/n5550/issues/5
+
