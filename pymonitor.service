@@ -4,6 +4,13 @@ Description=Thecus LCD Scroller
 [Service]
 Type=simple
 WorkingDirectory=/root/pymonitor
+User=root
+Group=root
+ProtectKernelTunables=no
+ProtectControlGroups=no
+ProtectSystem=no
+ReadWritePaths=/sys/class/gpio
+ExecStartPre=/usr/bin/chmod 0666 /sys/class/gpio/export /sys/class/gpio/unexport
 ExecStart=/usr/bin/python3 /root/pymonitor/pymonitor.py -p /dev/ttyS0
 
 [Install]
