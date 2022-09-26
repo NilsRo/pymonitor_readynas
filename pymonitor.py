@@ -1,10 +1,12 @@
 #!/usr/bin/env python3.1
 
-import os, re, imp, socket
+import os, re, socket
+from importlib.machinery import SourceFileLoader
 from daemon3x import daemon
 from optparse import OptionParser
 from threading import Thread
 import time
+import signal
 import send_thecus
 import gpio as GPIO
 
@@ -47,7 +49,8 @@ for file in os.listdir(mod_dir):
     if match:
         fname = os.path.join(mod_dir, file)
         mname = match.groups(0)[0]
-        mod = imp.load_source(mname, fname)
+        #mod = imp.load_source(mname, fname)
+        mod = SourceFileLoader(mname, fname).load_module()
 
         mod_desc = { "name": mname, "mod": mod }
         if get_text in dir(mod):
@@ -80,7 +83,7 @@ def buttons_loop():
     st_dwn = 1
     st_upp = 1
 
-    while True:
+    while run:
         ev_esc = GPIO.input(16)
         ev_ent = GPIO.input(17)
         ev_dwn = GPIO.input(18)
@@ -118,12 +121,24 @@ def buttons_loop():
 
         time.sleep(0.1)
 
+def sigterm_handler(_signo, _stack_frame):
+    global run
+    for seq in [3, 2, 1, 0]:
+        send_thecus.write_message(msg1 = "", msg2 = "   Shutdown (%s)   " % seq, port = opts.port)
+        time.sleep(1)
+    send_thecus.write_message(msg1 = "", msg2 = "", port = opts.port)
+    run = False
+
 def main_loop():
+
+    signal.signal(signal.SIGINT, sigterm_handler)
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
     global ev_next, ev_back, ev_refresh_now, ev_pause
     idx = 0
     sub_idx = 0
 
-    while True:
+    while run:
         # run gettext for each required module
         for mod in mods:
             if mod["countdown"] == 0 or ev_refresh_now:
@@ -195,9 +210,12 @@ def main_loop():
 
         time.sleep(1)
 
+
 class MyDaemon(daemon):
     def run(self):
         main_loop()
+
+run = True
 
 monitor_thread = Thread(target=buttons_loop)
 monitor_thread.start()
@@ -207,4 +225,6 @@ if opts.daemon == True:
     d.start()
 else:
     main_loop()
+
+monitor_thread.join()
 

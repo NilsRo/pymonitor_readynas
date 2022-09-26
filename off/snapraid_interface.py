@@ -1,6 +1,6 @@
-import shlex, subprocess, re
+import shlex, subprocess, re, time, sys
 
-snapraid_command = "/usr/bin/snapraid status"
+snapraid_command = "snapraid status"
 
 snapraid_busy = re.compile(r"SnapRAID is already in use")
 
@@ -18,11 +18,20 @@ def run_snapraid(cmd):
     stderr = proc.stderr.read().decode("utf-8")
     retcode = proc.poll()
 
-    if snapraid_busy.search(stderr) and retcode > 0:
-        return(["sRAID is active!"])
+    has_errors = False
+    try:
+        time.sleep(1)
+        if retcode > 0:
+            has_errors = True
+    except Exception:
+        # this happends sometimes (TypeError: '>' not supported between instances of 'NoneType' and 'int') - maybe a raid
+        sys.stderr.write("WARNING: Unable to get snapraid command exit code")
 
-    if retcode > 0:
+    if has_errors:
         return([]) # no snapraid - don't spam me
+
+    if snapraid_busy.search(stderr):
+        return(["sRAID is active!"])
 
     ret = set()
     in_summary = False
@@ -51,7 +60,7 @@ def run_snapraid(cmd):
         ret.add("sRAID: has errors!")
 
     if no_sync and no_rehash and no_error:
-        ret.add("sRAID: healthy (%03d)"%retcode) 
+        ret.add("sRAID: is healthy")
 
     return sorted(ret)
 
