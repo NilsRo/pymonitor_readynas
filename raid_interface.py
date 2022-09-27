@@ -1,8 +1,7 @@
 import re
 import collections
 
-raid_entry = collections.namedtuple("raid_entry", "name status level drives size dev_name elements online_elements")
-drive_entry = collections.namedtuple("drive_entry", "block_name raid_drive model")
+raid_entry = collections.namedtuple("raid_entry", "name status level drives size dev_name elements online_elements disks recovery")
 
 def get_status():
     fd = open("/proc/mdstat", "r")
@@ -11,11 +10,17 @@ def get_status():
 
     raid_dict = dict()
 
-    for device in re.findall(r"(md[0-9]*) : (\S+) (\S+) (.*?)\n\s+?(\d+)\s+?blocks[^\[]+\[(\d+)\/(\d+)\]", txt):
+    for device in re.findall(r"(md[0-9]*) : (\S+) (\S+) (.*?)\n\s+?(\d+)\s+?blocks[^\[]+\[(\d+)\/(\d+)\]\s+\[(.*?)\]", txt):
         entry = raid_entry(device[0], device[1], device[2], [],
-                device[4], "/dev/%s" % device[0], device[5], device[6])
+                device[4], "/dev/%s" % device[0], device[5], device[6], device[7], 0)
     
         raid_dict[entry.name] = entry
+
+    for device in re.findall(r"(md[0-9]*) : .*?\n.*?\n.*? recovery =\s+([\d\.]+)%", txt):
+        try:
+            raid_dict[device[0]] = raid_dict[device[0]]._replace(recovery=float(device[1]))
+        except:
+            pass
 
     return raid_dict
 
@@ -33,8 +38,10 @@ def get_text():
             ret_name = name
 
         if rdev.status == "active":
-            if rdev.elements > rdev.online_elements:
-                ret_status = "Degraded"
+            if rdev.recovery > 0:
+                ret_status = "Recovery %s%%" % int(rdev.recovery)
+            elif rdev.elements > rdev.online_elements:
+                ret_status = "Degraded %s" % rdev.disks
             else:
                 ret_status = "Healthy"
         else:
