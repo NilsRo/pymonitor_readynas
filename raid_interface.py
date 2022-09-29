@@ -38,8 +38,13 @@ def get_text():
             ret_name = name
 
         if rdev.status == "active":
-            if rdev.recovery > 0 and rdev.sub_status == 'recovery':
-                ret_status = "Recovery %s%%" % int(rdev.recovery)
+            if rdev.recovery > 0: 
+                rstat = 'Working'
+                if rdev.sub_status == 'recovery':
+                    rstat = 'Recovery'
+                if rdev.sub_status == 'check':
+                    rstat = 'Checking'
+                ret_status = "%s %s%%" % ( rstat, int(rdev.recovery) )
             elif rdev.recovery > 0 and rdev.sub_status == 'check':
                 ret_status = "Checking %s%%" % round(rdev.recovery,1)
             elif rdev.elements > rdev.online_elements:
