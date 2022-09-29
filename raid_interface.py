@@ -44,7 +44,7 @@ def get_text():
                     rstat = 'Recovery'
                 if rdev.sub_status == 'check':
                     rstat = 'Checking'
-                ret_status = "%s %s%%" % ( rstat, int(rdev.recovery) )
+                ret_status = "%s %s%%" % ( rstat, round(rdev.recovery,1) )
             elif rdev.recovery > 0 and rdev.sub_status == 'check':
                 ret_status = "Checking %s%%" % round(rdev.recovery,1)
             elif rdev.elements > rdev.online_elements:
