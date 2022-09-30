@@ -16,7 +16,7 @@ def get_status():
     
         raid_dict[entry.name] = entry
 
-    for device in re.findall(r"(md[0-9]*) : .*?\n.*?\n.*? (recovery|check) =\s+([\d\.]+)%", txt):
+    for device in re.findall(r"(md[0-9]*) : .*?\n.*?\n.*? (recovery|check|resync) =\s+([\d\.]+)%", txt):
         try:
             raid_dict[device[0]] = raid_dict[device[0]]._replace(sub_status=device[1],recovery=float(device[2]))
         except:
@@ -44,6 +44,8 @@ def get_text():
                     rstat = 'Recovery'
                 if rdev.sub_status == 'check':
                     rstat = 'Checking'
+                if rdev.sub_status == 'resync':
+                    rstat = 'Resync'
                 ret_status = "%s %s%%" % ( rstat, round(rdev.recovery,1) )
             elif rdev.recovery > 0 and rdev.sub_status == 'check':
                 ret_status = "Checking %s%%" % round(rdev.recovery,1)
