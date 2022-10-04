@@ -33,14 +33,14 @@ def get_text():
             ret_name = name.split('/')[-1]
 
         ret_used = rdev.used
-        if len(ret_used) > 3:
-            ret_used = round(ret_used)
+        if len(ret_used) > 3 or float(ret_used) == round(float(ret_used)):
+            ret_used = str(int(round(float(ret_used),0)))
         if rdev.used_unit != rdev.size_unit:
             ret_used = ret_used + rdev.used_unit
 
         ret_size = rdev.size
-        if len(ret_size) > 3:
-            ret_size = round(ret_size)
+        if len(ret_size) > 3 or float(ret_size) == round(float(ret_size)):
+            ret_size = str(int(round(float(ret_size),0)))
         ret_size = ret_size + rdev.size_unit
 
         ret_percent = rdev.used_percent
