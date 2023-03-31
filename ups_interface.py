@@ -22,7 +22,7 @@ def get_status():
         ups_name = ups_full.split('@')[0]
         ups_addr = ups_full.split('@')[-1]
 
-        if not ups_addr:
+        if not ups_addr or ups_addr == ups_full:
             ups_name = ups_full
             ups_addr = 'localhost'
 
@@ -42,6 +42,17 @@ def get_status():
 
             if k == 'ups.status':
                 ups_flag = v
+
+        if not ups_batt:
+            ups_batt = -1
+
+        if not ups_flag:
+            ups_flag = 'UNKN'
+
+        if ups_addr != '127.0.0.1' and ups_addr != 'localhost':
+            ups_flag = ups_flag + ' REMOTE'
+        else:
+            ups_flag = ups_flag + ' LOCAL'
 
         entry = ups_entry(ups_name, ups_addr, ups_batt, ups_flag)
         ups_dict[entry.name] = entry

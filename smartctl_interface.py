@@ -13,6 +13,8 @@ def run_smartctl(cmd):
 
     if (retcode & 1 != 0):
         return "." # bit 1: open failed, no identify or in low-power mode
+    elif (retcode & 2 != 0):
+        return "z" # bit 2: /k. my disks return this in standby :)
     elif(retcode & 8 != 0):
         return "f" # bit 2: smart data read error or checksum error
     elif(retcode & 64 != 0):
